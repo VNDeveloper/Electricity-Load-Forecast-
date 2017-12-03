@@ -1,0 +1,120 @@
+twoLayer = TwoLayerNeuralNetwork;
+normalizeData = NormalizeData;
+denormalize = DenormalizeData;
+dataType = DataType1;
+errorCal = errorCalculate;
+count = 0;
+%N is max peak
+%G is min peak
+filename = 'Train&Test.xls';
+range = 'G2:G762';
+
+
+trainDataNormalize = normalizeData.normalization(filename, range);
+%denormalizeData = denormalize.denormalizeSetData(trainDataNormalize{1}, trainDataNormalize{2}, trainDataNormalize{3});
+%tes1t = dataType.getData(denormalizeData);
+
+%// Control Panel //%
+while test ~= 5
+
+    test = test + 1;
+    if test == 1
+    
+        h1Size = 8;
+        h2Size = 5;
+        
+    elseif test == 2
+            
+        h1Size = 10;
+        h2Size = 6;
+    
+    elseif test == 3
+        
+        h1Size = 12;
+        h2Size = 9;
+    
+    elseif test == 4
+            
+        h1Size = 16;
+        h2Size = 12;
+    
+    elseif test == 5
+        
+        h1Size = 20;
+        h2Size = 15;
+        
+    elseif test == 6
+        
+        h1Size = 24
+        h2Size = 16;
+    end
+     
+    epochSize = 0;
+
+while(epochSize < 15000)
+    
+
+epochSize = epochSize + 1000;
+
+
+fixH1Size = h1Size;
+fixH2Size = h2Size;
+
+%//--------------//
+
+tic
+ results = twoLayer.neuralNet(epochSize, trainDataNormalize, fixH1Size, fixH2Size);
+    
+
+toc
+
+predictOutput = results{1};
+actualOutput = results{2};
+learnRate = results{3};
+momentum = results {4};
+trainOutput = results {5};
+trainActual = results {6};
+
+
+
+trainResult = horzcat(trainOutput, trainActual);
+testResult = horzcat(predictOutput, actualOutput);
+
+%Error calculation for testing
+testMSE = errorCal.callMSE(testResult); 
+testRMSE = sqrt(testMSE);
+testMAPE = errorCal.callMAPE(testResult);
+testSEP = errorCal.callSEP(testResult);
+
+%Error caluclation for training
+trainMSE = errorCal.callMSE(trainResult);
+trainRMSE = sqrt(trainMSE);
+trainMAPE = errorCal.callMAPE(trainResult);
+trainSEP = errorCal.callSEP(trainResult);
+
+%Put error in column for display in table view
+MSEcolumn = {testMSE; trainMSE};
+RMSEcolumn = {testRMSE; trainRMSE};
+MAPEcolumn = {testMAPE; trainMAPE};
+SEPcolumn = {testSEP; trainSEP};
+epochColumn = {epochSize; epochSize};
+rowName = {'Test Results'; 'Train Results'};
+
+compateTestAndTrain = table(epochColumn, MSEcolumn , RMSEcolumn, MAPEcolumn, SEPcolumn, 'RowNames', rowName)
+
+%Prepare Result for Excel
+count = count + 1;
+printResult(count,:) = {count, h1Size, h2Size, epochSize, learnRate, testMSE, testRMSE, testMAPE, testSEP};
+
+t = 1:31;
+figure1 = figure;
+fileName = ['Test h1 ' num2str(fixH1Size) ' h2 ' num2str(fixH2Size) ' TestNo ' num2str(count)  '.png'];
+graph = plot(t, actualOutput, t, predictOutput);
+
+saveas(figure1, fileName);
+
+xlswrite('TestResults.xls', printResult);
+
+end
+
+end
